@@ -195,6 +195,74 @@ Feature: Install WP-CLI packages
       """
 
   @github-api
+  Scenario: Install a package from a standard Git URL
+    Given an empty directory
+
+    When I try `wp package install https://github.com/wp-cli-test/repository-name`
+    Then the return code should be 0
+    And STDERR should contain:
+      """
+      Warning: Package name mismatch...Updating from git name 'wp-cli-test/repository-name' to composer.json name 'wp-cli-test/package-name'.
+      """
+    And STDOUT should contain:
+      """
+      Success: Package installed.
+      """
+    And the {PACKAGE_PATH}composer.json file should contain:
+      """
+      "wp-cli-test/package-name": "dev-master"
+      """
+
+    When I run `wp package install https://github.com/wp-cli/google-sitemap-generator-cli`
+    Then STDOUT should contain:
+      """
+      Installing package wp-cli/google-sitemap-generator-cli (dev-master)
+      Updating {PACKAGE_PATH}composer.json to require the package...
+      Registering https://github.com/wp-cli/google-sitemap-generator-cli as a VCS repository...
+      Using Composer to install the package...
+      """
+    And STDOUT should contain:
+      """
+      Success: Package installed.
+      """
+
+    When I run `wp package list --fields=name`
+    Then STDOUT should be a table containing rows:
+      | name                                |
+      | wp-cli/google-sitemap-generator-cli |
+
+    When I run `wp google-sitemap`
+    Then STDOUT should contain:
+      """
+      usage: wp google-sitemap rebuild
+      """
+
+    When I run `wp package uninstall wp-cli/google-sitemap-generator-cli`
+    Then STDOUT should contain:
+      """
+      Removing require statement from {PACKAGE_PATH}composer.json
+      Removing repository details from {PACKAGE_PATH}composer.json
+      """
+    And the {PACKAGE_PATH}composer.json file should not contain:
+      """
+      "wp-cli/google-sitemap-generator-cli": "dev-master"
+      """
+    And the {PACKAGE_PATH}composer.json file should not contain:
+      """
+      "url": "https://github.com/wp-cli/google-sitemap-generator-cli"
+      """
+    And STDOUT should contain:
+      """
+      Success: Uninstalled package.
+      """
+
+    When I run `wp package list --fields=name`
+    Then STDOUT should not contain:
+      """
+      wp-cli/google-sitemap-generator-cli
+      """
+
+  @github-api
   Scenario: Install a package from a Git URL with mixed-case git name but lowercase composer.json name
     Given an empty directory
 

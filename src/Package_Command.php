@@ -215,6 +215,13 @@ class Package_Command extends WP_CLI_Command {
 			} else {
 				WP_CLI::error( "Couldn't parse package name from expected path '<name>/<package>'." );
 			}
+		} else if ( $this->is_github_url( $package_name, $matches) ) {
+			$git_package = $package_name;
+			if ( ! empty( $matches[1] ) ) {
+				$package_name = $this->check_git_package_name( $matches[1] );
+			} else {
+				WP_CLI::error( "Couldn't parse package name from expected path '<name>/<package>'." );
+			}
 		} else if ( ( false !== strpos( $package_name, '://' ) && false !== stripos( $package_name, '.zip' ) )
 			|| ( pathinfo( $package_name, PATHINFO_EXTENSION ) === 'zip' && is_file( $package_name ) ) ) {
 			// Download the remote ZIP file to a temp directory
@@ -975,6 +982,20 @@ class Package_Command extends WP_CLI_Command {
 	 */
 	private function is_git_repository( $package ) {
 		return '.git' === strtolower( substr( $package, -4, 4 ) );
+	}
+
+	/**
+	 * Checks whether a given package is a git hosting vendor's URL.
+	 *
+	 * @param string $package Package name to check.
+	 * @param array &$matches regex match results.
+	 *
+	 * @return bool Whether the package is a git hosting vendor's URL.
+	 *
+	 */
+	private function is_github_url( $package, &$matches ) {
+		preg_match( '#^https\:\/\/github\.com\/([^:\/]+\/[^\/]+)#', $package, $matches );
+		return ! empty( $matches[1] );
 	}
 
 	/**
